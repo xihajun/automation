@@ -1,0 +1,66 @@
+name: automation template
+
+on:
+  push:
+    paths:
+      - data/*
+      
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: r-lib/actions/setup-r@master
+    - uses: r-lib/actions/setup-pandoc@master
+
+    - name: Cache R Packages
+      uses: actions/cache@v1.1.0
+      with:
+        path: ${{ env.R_LIBS_USER }}
+        key:  r-${{ hashFiles('DESCRIPTION') }}
+        
+    - name: Install OpenSSL
+      run: sudo apt-get update; sudo apt-get install libcurl4-openssl-dev; sudo apt-get install libssl-dev; date > TIME
+
+    - name: Install dependencies
+      run: |
+        install.packages(c('BiocManager'))
+      shell: Rscript {0}
+
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+        
+    - name: Python Pip Install
+      # You may pin to the exact commit or the version.
+      # uses: logikal-code/pip-install@51d215f7fc153e741488726defaa8cb84ea35300
+      uses: logikal-code/pip-install@v1.0.0
+      with:
+        # The path to the requirements file
+        requirements: requirements.txt
+        
+    - name: 虚晃一枪
+      run: |
+        cd data
+        echo "test"
+     
+    - name: pull-request
+      uses: repo-sync/pull-request@v2
+      with:
+        destination_branch: "main"
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: commit
+      run: |
+        git config --global user.email jh2259@mrc-cu.cam.ac.uk
+        git config --global user.name xihajun
+        git add .
+        git commit -m "update lists" -a
+        
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
